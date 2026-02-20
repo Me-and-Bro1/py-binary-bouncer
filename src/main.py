@@ -1,5 +1,5 @@
 import socket
-
+import struct
 
 def gethttp(url):
     i = url.index(b":")
@@ -33,9 +33,12 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
         conn, addr = s.accept()
         with conn:
             print('Connected by', addr)
-            while True:
-                data = conn.recv(2048)
-                if not data: break
-                print(data)
-                data = gethttp(data)
-                conn.sendall(data)
+            header = conn.recv(3)
+            if not header or len(header)<3: break
+
+            command, pyload_len = struct.unpack(">BH",header)
+            pyload = conn.recv(pyload_len)
+
+            if not pyload or len(pyload)<pyload_len: break
+            data = gethttp(pyload)
+            conn.sendall(data)
